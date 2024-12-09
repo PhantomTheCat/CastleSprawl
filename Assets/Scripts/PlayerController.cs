@@ -9,39 +9,67 @@ using UnityEngine.InputSystem;
 [RequireComponent(typeof(PlayerBehavior))]
 [RequireComponent(typeof(CharacterController))]
 [RequireComponent(typeof(PlayerInput))]
+[RequireComponent(typeof(AudioSource))]
+[RequireComponent(typeof(FootstepController))]
 public class PlayerController : MonoBehaviour
 {
+    //
     //Properties
-    [SerializeField] private const float playerSpeed = 6f;
+    //
+    [Header("Movement Stats")]
+    [SerializeField] private float playerSpeed = 6f;
     [SerializeField] private float gravityMagnitude = -9.8f;
     [SerializeField] private float sprintModifier = 1.5f;
+
+    [Header("Camera Parenting")]
+    [SerializeField] private Camera playerCamera;
+    [SerializeField] private Transform crouchedCameraPosition;
+
+    //Input Actions for the new input system
     private InputAction zAxisMove;
     private InputAction xAxisMove;
     private InputAction crouch;
     private InputAction sprint;
-    private InputAction pauseMenu;
     private PlayerControls controlMappings;
+
+    //Components
     private CharacterController characterController;
     private PlayerBehavior player;
+    private Animator animator;
+    private FootstepController footstepController;
+
+    //Tracking Variables
     private bool isSprinting = false;
     private bool canEscape = false;
     private float secondsWindowToEscape = 2f;
+    private Vector3 cameraStartingPosition;
 
-
+    //
     //Methods
+    //
     protected void Awake()
     {
         //Linking these to instances
         controlMappings = new PlayerControls();
         characterController = GetComponent<CharacterController>();
         player = GetComponent<PlayerBehavior>();
+        animator = transform.GetComponentInChildren<Animator>();
+        footstepController = GetComponent<FootstepController>();
 
         //Linking the movement to the inputs so we know when player wants to move
         zAxisMove = controlMappings.Movement.MoveForwardAndBack;
         xAxisMove = controlMappings.Movement.MoveLeftAndRight;
         sprint = controlMappings.Movement.Sprint;
         crouch = controlMappings.Movement.Crouch;
-        pauseMenu = controlMappings.Movement.Menu;
+
+        //Making sure we got our animator
+        if (animator == null)
+        {
+            Debug.LogError("Couldn't find our player animator in the children of the player");
+        }
+
+        //Getting the camera's starting position
+        cameraStartingPosition = playerCamera.transform.localPosition;
     }
 
     protected void OnEnable()
@@ -51,7 +79,6 @@ public class PlayerController : MonoBehaviour
         xAxisMove.Enable();
         sprint.Enable();
         crouch.Enable();
-        pauseMenu.Enable();
     }
 
     protected void OnDisable()
@@ -61,7 +88,6 @@ public class PlayerController : MonoBehaviour
         xAxisMove.Disable();
         sprint.Disable();
         crouch.Disable();
-        pauseMenu.Disable();
     }
 
     protected void Update()
@@ -76,6 +102,7 @@ public class PlayerController : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.E) && canEscape)
         {
             GameManager.Instance.PlayerEscaped.Invoke();
+            player.UseKey();
         }
     }
 
@@ -83,6 +110,9 @@ public class PlayerController : MonoBehaviour
     {
         //Handling movement
         HandleMovement();
+
+        //Seeing if we're crouched
+        CheckForCrouched();
     }
 
     protected void OnControllerColliderHit(ControllerColliderHit hit)
@@ -93,22 +123,25 @@ public class PlayerController : MonoBehaviour
         //Seeing if we hit a key
         if (hit.gameObject.tag == "Key")
         {
+            //Collecting the key and destroying the key game object
             Destroy(hit.gameObject);
             player.CollectKey();
-            Debug.Log("Player got a key!");
         }
 
         //Seeing if we hit a padlock
         if (hit.gameObject.tag == "Padlock")
         {
+            //Seeing if we have enough keys
             if (player.CheckIfEnoughKeys())
             {
+                //Setting a time window to escape
                 canEscape = true;
                 GameManager.Instance.PlayerInRangeOfEscape.Invoke();
                 StartCoroutine(SetWindowToEscape());
             }
             else
             {
+                //Sending message to UI that we can't open this yet
                 GameManager.Instance.PlayerCantOpenLock.Invoke();
             }
         }
@@ -120,28 +153,40 @@ public class PlayerController : MonoBehaviour
         float xAxisInput = xAxisMove.ReadValue<float>() * playerSpeed;
         float zAxisInput = zAxisMove.ReadValue<float>() * playerSpeed;
 
-        //Seeing if sprinting or not
-        if (sprint.ReadValue<float>() > 0)
+        //Seeing if we are moving
+        if (xAxisInput != 0 || zAxisInput != 0)
         {
-            xAxisInput *= sprintModifier;
-            zAxisInput *= sprintModifier;
-            isSprinting = true;
+            //Seeing if sprinting or not
+            if (sprint.ReadValue<float>() > 0)
+            {
+                xAxisInput *= sprintModifier;
+                zAxisInput *= sprintModifier;
+                isSprinting = true;
+            }
+
+            //Applying the footstep sound if movement is above 0
+            footstepController.ChangeMovingState(true, isSprinting);
+
+            //Translating input into Vector3/axis along the x and z axis respectfully
+            Vector3 movement = new Vector3(xAxisInput, 0, zAxisInput);
+
+            //Applying gravity
+            movement.y = gravityMagnitude;
+
+            //Moving character
+            movement *= Time.deltaTime;
+            movement = transform.TransformDirection(movement);
+            characterController.Move(movement);
+
         }
         else
         {
-            isSprinting = false;
+            //Else stop the footstep sounds
+            footstepController.ChangeMovingState(false, isSprinting);
         }
 
-        //Translating input into Vector3/axis along the x and z axis respectfully
-        Vector3 movement = new Vector3(xAxisInput, 0, zAxisInput);
-
-        //Applying gravity
-        movement.y = gravityMagnitude;
-
-        //Moving character
-        movement *= Time.deltaTime;
-        movement = transform.TransformDirection(movement);
-        characterController.Move(movement);
+        //Setting the sprinting bool to default
+        isSprinting = false;
     }
 
     private IEnumerator SetWindowToEscape()
@@ -151,5 +196,24 @@ public class PlayerController : MonoBehaviour
         yield return new WaitForSeconds(secondsWindowToEscape);
         GameManager.Instance.PlayerLeftRangeOfEscape.Invoke();
         canEscape = false;
+    }
+
+    private void CheckForCrouched()
+    {
+        //Getting the crouch input
+        float crouchInput = crouch.ReadValue<float>();
+
+        //Seeing if crouch input is greater than 0
+        //(means we're crouched)
+        if (crouchInput > 0)
+        {
+            animator.SetBool("IsCrouched", true);
+            playerCamera.transform.position = crouchedCameraPosition.position;
+        }
+        else
+        {
+            animator.SetBool("IsCrouched", false);
+            playerCamera.transform.localPosition = cameraStartingPosition;
+        }
     }
 }

@@ -11,6 +11,7 @@ public class GameManager : Singleton<GameManager>
     //
     //Properties
     //
+    [Header("Events")]
     /// <summary>
     /// Unity event for when the player gets caught and loses
     /// </summary>
@@ -44,10 +45,20 @@ public class GameManager : Singleton<GameManager>
     public UnityEvent PlayerInRangeOfEscape = new UnityEvent();
 
     /// <summary>
-    /// Unity even for when player leaves the escape, 
+    /// Unity event for when player leaves the escape, 
     /// but triggered a few seconds after leaving
     /// </summary>
     public UnityEvent PlayerLeftRangeOfEscape = new UnityEvent();
+
+    /// <summary>
+    /// Unity Event for whenever a key gets picked up
+    /// </summary>
+    public UnityEvent KeyPickedUp = new UnityEvent();
+
+    /// <summary>
+    /// Unity event for whenever a key is used
+    /// </summary>
+    public UnityEvent KeyUsed = new UnityEvent();
 
     private SceneLoader sceneLoader;
     private bool isPaused = false;
@@ -69,6 +80,7 @@ public class GameManager : Singleton<GameManager>
         Instance.PlayerEscaped.AddListener(EndGame);
         Instance.StartButtonPushed.AddListener(StartGame);
         Instance.PauseButtonPushed.AddListener(PauseGame);
+        Instance.PlayerEscaped.AddListener(KeyUsed.Invoke);
     }
 
     public void PushStartButton()
@@ -81,7 +93,9 @@ public class GameManager : Singleton<GameManager>
     private void EndGame()
     {
         //Pausing game to restrict player movement
+        //and preventing player from unpausing
         PauseButtonPushed.Invoke();
+        PauseButtonPushed.RemoveAllListeners();
 
         //Starting a coroutine to go back to the splash screen
         StartCoroutine(GoBackToSplashScreen());

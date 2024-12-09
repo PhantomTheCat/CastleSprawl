@@ -2,21 +2,29 @@ using System.Collections;
 using UnityEngine;
 
 /// <summary>
-/// Class for enemy's movement and stats
+/// Class for enemy's movement, sound, and stats
 /// </summary>
+[RequireComponent(typeof(CharacterController))]
+[RequireComponent(typeof(FootstepController))]
 public class EnemyBehavior : MonoBehaviour
 {
     //Properties
-    [SerializeField] private float detectionConeAngle = 60f;
-    [SerializeField] private float detectionConeDistance = 25f;
-    [SerializeField] private const float speed = 4f;
+    [Header("Movement Stats")]
+    [SerializeField] private float speed = 4f;
     [SerializeField] private float sprintModifier = 2f;
     [SerializeField] private float gravityMagnitude = -9.8f;
+
+    [Header("Detection Stats")]
     [SerializeField] private LayerMask targetLayer;
     [SerializeField] private LayerMask obstacleLayer;
+    [SerializeField] private float detectionConeAngle = 60f;
+    [SerializeField] private float detectionConeDistance = 25f;
     [SerializeField] private float secondsToSearch = 5f;
     [SerializeField] private float searchSphereRadius = 3f;
+
+    [Header("Waypoints")]
     [SerializeField] private Transform[] waypoints;
+
     private int currentWaypointIndex = 0;
     private PlayerBehavior targetSeen = null;
     private Transform lastPositionOfTarget = null;
@@ -25,8 +33,8 @@ public class EnemyBehavior : MonoBehaviour
     private bool goingBackwardsAlongWaypoints = false;
     private float distanceNeededToCatch = 3f;
     private float distanceNeededToChangeWaypoint = 1f;
-
     private CharacterController enemyCharacterController;
+    private FootstepController footstepController;
 
 
     //Methods
@@ -34,6 +42,10 @@ public class EnemyBehavior : MonoBehaviour
     {
         //Getting components
         enemyCharacterController = GetComponent<CharacterController>();
+        footstepController = GetComponent<FootstepController>();
+
+        //Starting the footsteps as the footsteps continuosly go
+        footstepController.ChangeMovingState(true, false);
 
         //Making sure we have those components or send an error to designer
         if (enemyCharacterController == null)
@@ -58,13 +70,17 @@ public class EnemyBehavior : MonoBehaviour
         DetectPlayer();
     }
 
+    /// <summary>
+    /// Method for handling movement, where if we know 
+    /// where the player is or have just seen them, we will 
+    /// follow them. Otherwise we stick to the path
+    /// </summary>
     private void HandleMovement()
     {
-        //If we know where the player is or have just seen them,
-        //we will follow them. Otherwise we stick to the path
-
+        //Seeing if the target is not visible
         if (targetSeen == null)
         {
+            //And we haven't seen the player for a bit
             if (!stoppedSeeingPlayer)
             {
                 //Move along waypoint system
@@ -72,7 +88,7 @@ public class EnemyBehavior : MonoBehaviour
             }
             else
             {
-                //Check out the last player position we saw them at (Search)
+                //Else check out the last player position we saw them at (Search)
                 SearchArea();
             }
         }
@@ -297,7 +313,14 @@ public class EnemyBehavior : MonoBehaviour
             //Making enemy go faster if chasing player
             if (chasingPlayer)
             {
+                //Setting the sprint modifiers (including sound)
                 movement *= sprintModifier;
+                footstepController.ChangeMovingState(true, true);
+            }
+            else
+            {
+                //Removing sprint modifiers
+                footstepController.ChangeMovingState(true, false);
             }
         }
 

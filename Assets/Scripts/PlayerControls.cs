@@ -63,15 +63,6 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
-                },
-                {
-                    ""name"": ""Menu"",
-                    ""type"": ""Button"",
-                    ""id"": ""2025bdcc-da44-4241-b7aa-e50f49a72cfa"",
-                    ""expectedControlType"": """",
-                    ""processors"": """",
-                    ""interactions"": """",
-                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -162,17 +153,6 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
                     ""action"": ""Sprint"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
-                },
-                {
-                    ""name"": """",
-                    ""id"": ""638fa36f-1a77-4cd0-a14d-b79ab3e4bba8"",
-                    ""path"": ""<Keyboard>/escape"",
-                    ""interactions"": """",
-                    ""processors"": """",
-                    ""groups"": """",
-                    ""action"": ""Menu"",
-                    ""isComposite"": false,
-                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -185,7 +165,6 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
         m_Movement_MoveLeftAndRight = m_Movement.FindAction("MoveLeftAndRight", throwIfNotFound: true);
         m_Movement_Crouch = m_Movement.FindAction("Crouch", throwIfNotFound: true);
         m_Movement_Sprint = m_Movement.FindAction("Sprint", throwIfNotFound: true);
-        m_Movement_Menu = m_Movement.FindAction("Menu", throwIfNotFound: true);
     }
 
     ~@PlayerControls()
@@ -256,7 +235,6 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
     private readonly InputAction m_Movement_MoveLeftAndRight;
     private readonly InputAction m_Movement_Crouch;
     private readonly InputAction m_Movement_Sprint;
-    private readonly InputAction m_Movement_Menu;
     public struct MovementActions
     {
         private @PlayerControls m_Wrapper;
@@ -265,7 +243,6 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
         public InputAction @MoveLeftAndRight => m_Wrapper.m_Movement_MoveLeftAndRight;
         public InputAction @Crouch => m_Wrapper.m_Movement_Crouch;
         public InputAction @Sprint => m_Wrapper.m_Movement_Sprint;
-        public InputAction @Menu => m_Wrapper.m_Movement_Menu;
         public InputActionMap Get() { return m_Wrapper.m_Movement; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -287,9 +264,6 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
             @Sprint.started += instance.OnSprint;
             @Sprint.performed += instance.OnSprint;
             @Sprint.canceled += instance.OnSprint;
-            @Menu.started += instance.OnMenu;
-            @Menu.performed += instance.OnMenu;
-            @Menu.canceled += instance.OnMenu;
         }
 
         private void UnregisterCallbacks(IMovementActions instance)
@@ -306,9 +280,6 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
             @Sprint.started -= instance.OnSprint;
             @Sprint.performed -= instance.OnSprint;
             @Sprint.canceled -= instance.OnSprint;
-            @Menu.started -= instance.OnMenu;
-            @Menu.performed -= instance.OnMenu;
-            @Menu.canceled -= instance.OnMenu;
         }
 
         public void RemoveCallbacks(IMovementActions instance)
@@ -332,6 +303,5 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
         void OnMoveLeftAndRight(InputAction.CallbackContext context);
         void OnCrouch(InputAction.CallbackContext context);
         void OnSprint(InputAction.CallbackContext context);
-        void OnMenu(InputAction.CallbackContext context);
     }
 }

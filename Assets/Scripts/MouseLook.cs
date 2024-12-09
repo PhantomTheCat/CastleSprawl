@@ -7,12 +7,19 @@ using UnityEngine;
 public class MouseLook : MonoBehaviour
 {
     //Properties
+    [Header("Sensitivity")]
     [SerializeField] private float sensitivityHorizontal = 9f;
     [SerializeField] private float sensitivityVertical = 9f;
+
+    [Header("View Constraints")]
     [SerializeField] private float minimumVert = -45.0f;
     [SerializeField] private float maximumVert = 45.0f;
+
+    [Header("Input")]
     [SerializeField] private float verticalRotation = 0;
     [SerializeField] private float horizontalRotation = 0;
+
+    [Header("Camera")]
     [SerializeField] private Camera playerCamera;
     private bool cameraLocked = false;
     
@@ -37,7 +44,6 @@ public class MouseLook : MonoBehaviour
     protected void Update()
     {
         //Controlling rotation for player and camera
-
         if (!cameraLocked)
         {
             //(Player focuses on horizontal rotation because
@@ -50,6 +56,9 @@ public class MouseLook : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Controlling vertical rotation on the camera
+    /// </summary>
     private void CameraMouseRotation()
     {
         //Getting the vertical rotation (Used for camera)
@@ -60,6 +69,9 @@ public class MouseLook : MonoBehaviour
         playerCamera.transform.localEulerAngles = new Vector3(verticalRotation, 0, 0);
     }
 
+    /// <summary>
+    /// Controlling horizontal rotation of player on the player.
+    /// </summary>
     private void PlayerMouseRotation()
     {
         //Getting the horizontal rotation (Used for player)
@@ -70,6 +82,9 @@ public class MouseLook : MonoBehaviour
         this.transform.localEulerAngles = new Vector3(0, horizontalRotation, 0);
     }
 
+    /// <summary>
+    /// Changing the lock of the camera movement to the other state
+    /// </summary>
     public void ChangeLockCameraMovement()
     {
         //Putting the camera lock on the

@@ -13,11 +13,14 @@ public class PlayerBehavior : MonoBehaviour
     //Methods
     public void CollectKey()
     {
+        //Collecting a key into our inventory
         amountOfKeysCollected++;
+        GameManager.Instance.KeyPickedUp.Invoke();
     }
 
     public void UseKey()
     {
+        //Using a key
         amountOfKeysCollected--;
     }
 
